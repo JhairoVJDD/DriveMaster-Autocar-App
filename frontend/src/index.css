@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0f;
+  --color-card: #14141f;
+  --color-primary: #0ea5e9;
+  --color-accent: #8b5cf6;
+  --color-card-border: rgba(255, 255, 255, 0.1);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background-color: rgba(20, 20, 31, 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--color-card-border);
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-primary {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(to right, var(--color-primary), var(--color-accent));
+    color: white;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
+  }
+}
