@@ -3,26 +3,89 @@ require('dotenv').config(); // Cargar variables de entorno
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-// Supabase client initialize (opcional, solo para comprobar que no falten envs)
+const rateLimit = require('express-rate-limit');
+const hpp = require('hpp');
+
+// Supabase client initialize (verifica conexión y credenciales)
 require('./utils/supabase');
 
 // Inicializar la aplicación Express
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Desactivar cabecera que expone la tecnología del servidor
+app.disable('x-powered-by');
+
 // ==========================================
-// 1. MIDDLEWARES GLOBALES (Seguridad y Parseo)
+// 1. MIDDLEWARES GLOBALES DE ALTA SEGURIDAD
 // ==========================================
 
-// Helmet ayuda a proteger la aplicación estableciendo varias cabeceras HTTP de seguridad.
-app.use(helmet());
+// Helmet: Cabeceras HTTP de Seguridad Avanzadas (HSTS, CSP, X-Frame-Options, No-Sniff)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://*.supabase.co"]
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  dnsPrefetchControl: { allow: false },
+  frameguard: { action: 'deny' }, // Bloquea ataques de Clickjacking
+  hidePoweredBy: true,
+  hsts: {
+    maxAge: 31536000, // 1 año de enforcing HTTPS
+    includeSubDomains: true,
+    preload: true
+  },
+  ieNoOpen: true,
+  noSniff: true, // Bloquea manipulación de MIME Types
+  referrerPolicy: { policy: 'same-origin' },
+  xssFilter: true // Protección contra Cross-Site Scripting (XSS)
+}));
 
-// Habilitar CORS para permitir peticiones desde el Frontend
-app.use(cors());
+// CORS Estricto: Control de Orígenes Permitidos
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
 
-// Parseador de JSON (reemplaza a body-parser). Límite de 1mb para prevenir ataques DOS de payloads gigantes.
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origin (como apps móviles, Postman o curl en desarrollo)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Bloqueado por política CORS de seguridad'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
+}));
+
+// Rate Limiting: Prevención de ataques de Fuerza Bruta y Denial of Service (DoS)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // Ventana de 15 minutos
+  max: 200, // Máximo 200 peticiones por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    error: 'Demasiadas solicitudes desde esta dirección IP. Intente nuevamente en 15 minutos.'
+  }
+});
+app.use('/api/', apiLimiter);
+
+// Límite de tamaño estricto para evitar ataques de DoS por payloads excesivos
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// HPP: Prevenir ataques de HTTP Parameter Pollution (Manipulación de parámetros)
+app.use(hpp());
 
 // ==========================================
 // 2. RUTAS (Endpoints)
@@ -40,7 +103,13 @@ app.use('/api/students', studentRouter);
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'success',
-    message: '🚗 Backend-CAR API funcionando correctamente',
+    message: '🚗 Backend-CAR API protegida y funcionando correctamente',
+    security: {
+      helmet: 'ACTIVE',
+      rateLimiter: 'ACTIVE',
+      parameterPollutionDefense: 'ACTIVE',
+      aes256GcmSupport: 'READY'
+    },
     timestamp: new Date().toISOString()
   });
 });
@@ -53,19 +122,16 @@ app.use('*', (req, res) => {
 // ==========================================
 // 3. MIDDLEWARE DE MANEJO DE ERRORES GLOBAL
 // ==========================================
-// Se debe colocar SIEMPRE al final de todas las rutas
 const errorHandler = require('./middlewares/errorHandler');
 app.use(errorHandler);
 
 // ==========================================
-// 4. INICIO DE SERVIDOR Y BASE DE DATOS
+// 4. INICIO DE SERVIDOR
 // ==========================================
-
 const startServer = () => {
-  // Con Supabase (REST API base) no necesitamos mantener una conexión web socket persistente obligatoria para levantar el servidor
   app.listen(PORT, () => {
     console.log(`[INFO] 🚀 Servidor de Backend-CAR escuchando en el puerto ${PORT}`);
-    console.log(`[INFO] Modo: ${process.env.NODE_ENV}`);
+    console.log(`[INFO] Modo: ${process.env.NODE_ENV || 'development'}`);
   });
 };
 
