@@ -1,46 +1,113 @@
-@import "tailwindcss";
+﻿@import tailwindcss;
 
 @theme {
-  --color-background: #0a0a0f;
-  --color-card: #14141f;
-  --color-primary: #0ea5e9;
+  --color-background: #08090e;
+  --color-surface: #10121a;
+  --color-surface-hover: #171b26;
+  --color-primary: #3b82f6;
+  --color-primary-glow: #60a5fa;
   --color-accent: #8b5cf6;
-  --color-card-border: rgba(255, 255, 255, 0.1);
+  --color-accent-amber: #f59e0b;
+  --color-accent-emerald: #10b981;
 }
 
 @layer base {
+  * {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
   body {
     background-color: var(--color-background);
     color: #e2e8f0;
-    font-family: 'Inter', system-ui, sans-serif;
-    background-image:
-      radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
-    background-attachment: fixed;
-    min-height: 100vh;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    overflow-x: hidden;
   }
 }
 
-@layer components {
-  .glass-panel {
-    background-color: rgba(20, 20, 31, 0.6);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--color-card-border);
-    border-radius: 1rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  }
+/* Glassmorphism Ultra Premium */
+.glass-panel {
+  background: rgba(16, 18, 26, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
 
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background: linear-gradient(to right, var(--color-primary), var(--color-accent));
-    color: white;
-    font-weight: 500;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-  }
+.glass-card {
+  background: rgba(22, 26, 38, 0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  .btn-primary:hover {
-    transform: scale(1.05);
-    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
-  }
+.glass-card:hover {
+  background: rgba(26, 32, 48, 0.7);
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -10px rgba(59, 130, 246, 0.25);
+}
+
+/* ReUI / Kokonut UI Animated Buttons & Glow Effects */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: 0.6s;
+}
+
+.btn-shimmer:hover::before {
+  left: 100%;
+}
+
+.glow-ambient {
+  position: absolute;
+  filter: blur(80px);
+  opacity: 0.22;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 9999px;
+}
+
+/* Status Indicator Pulse */
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(0.95); opacity: 0; }
+}
+
+.pulse-active {
+  position: relative;
+}
+.pulse-active::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  background-color: #10b981;
+  animation: pulse-ring 2s infinite ease-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
