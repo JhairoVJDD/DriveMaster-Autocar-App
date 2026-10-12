@@ -1,21 +1,23 @@
-const crypto = require('crypto');
+﻿const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-// Configuración de cifrado AES-256-GCM
+// Algoritmo de cifrado AES-256-GCM
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_ROUNDS = 12;
 
-// Se obtiene la clave maestra del entorno o se deriva de un secreto seguro
+// Secreto para JWT
+const JWT_SECRET = process.env.JWT_SECRET || process.env.ENCRYPTION_SECRET || 'jwt-drivemaster-secret-key-99281-2026';
+const JWT_EXPIRES_IN = '8h';
+
 const getMasterKey = () => {
   const secret = process.env.ENCRYPTION_SECRET || process.env.SUPABASE_KEY || 'default-secure-fallback-driving-school-key-32b!';
   return crypto.createHash('sha256').update(String(secret)).digest();
 };
 
 /**
- * Encripta un texto sensible (DNI, teléfonos, datos personales) usando AES-256-GCM
- * @param {string} text - Texto en plano
- * @returns {string} - Cadena cifrada con formato iv:authTag:encrypted
+ * Encripta un texto sensible (DNI, teléfonos) usando AES-256-GCM
  */
 const encrypt = (text) => {
   if (!text) return text;
@@ -29,15 +31,13 @@ const encrypt = (text) => {
 
     return `${iv.toString('hex')}:${authTag}:${encrypted}`;
   } catch (err) {
-    console.error('[SECURITY ERROR] Fallo al encriptar dato sensible:', err.message);
+    console.error('[SECURITY ERROR] Fallo al encriptar:', err.message);
     throw new Error('Error al proteger datos sensibles');
   }
 };
 
 /**
- * Desencripta un texto previamente cifrado con AES-256-GCM
- * @param {string} encryptedString - iv:authTag:encrypted
- * @returns {string} - Texto original
+ * Desencripta texto con AES-256-GCM
  */
 const decrypt = (encryptedString) => {
   if (!encryptedString || !encryptedString.includes(':')) return encryptedString;
@@ -56,15 +56,13 @@ const decrypt = (encryptedString) => {
     decrypted += decipher.final('utf8');
     return decrypted;
   } catch (err) {
-    console.error('[SECURITY ERROR] Fallo al desencriptar o manipulación detectada:', err.message);
+    console.error('[SECURITY ERROR] Fallo al desencriptar:', err.message);
     throw new Error('Integridad de datos violada o llave inválida');
   }
 };
 
 /**
- * Hashea contraseñas usando bcrypt con salt rounds reforzado
- * @param {string} password - Contraseña en texto plano
- * @returns {Promise<string>} - Hash seguro no reversible
+ * Hash seguro de contraseña con bcrypt (12 rounds)
  */
 const hashPassword = async (password) => {
   if (!password) throw new Error('Contraseña requerida');
@@ -73,19 +71,32 @@ const hashPassword = async (password) => {
 };
 
 /**
- * Compara contraseña contra su hash de forma segura resistente a timing attacks
- * @param {string} password - Contraseña ingresada
- * @param {string} hash - Hash guardado
- * @returns {Promise<boolean>}
+ * Valida contraseña contra hash
  */
 const verifyPassword = async (password, hash) => {
   if (!password || !hash) return false;
   return bcrypt.compare(password, hash);
 };
 
+/**
+ * Genera token JWT firmado con rol y usuario
+ */
+const generateToken = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
+
+/**
+ * Verifica token JWT
+ */
+const verifyToken = (token) => {
+  return jwt.verify(token, JWT_SECRET);
+};
+
 module.exports = {
   encrypt,
   decrypt,
   hashPassword,
-  verifyPassword
+  verifyPassword,
+  generateToken,
+  verifyToken
 };

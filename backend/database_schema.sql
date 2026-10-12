@@ -66,3 +66,18 @@ CREATE TABLE reservations (
 
 -- 5. Índices adicionales para rendimiento
 CREATE INDEX idx_reservations_time ON reservations USING GIST (reservation_time);
+-- =========================================================================
+-- TABLA DE USUARIOS Y AUTENTICACIÓN (PostgreSQL / Supabase)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    full_name VARCHAR(150) NOT NULL,
+    role VARCHAR(30) DEFAULT 'INSTRUCTOR' CHECK (role IN ('ADMIN', 'INSTRUCTOR', 'STUDENT')),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
