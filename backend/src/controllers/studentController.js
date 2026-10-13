@@ -1,5 +1,12 @@
 const supabase = require('../utils/supabase');
 
+const maskSensitiveData = (value) => {
+  if (!value) return value;
+  const str = String(value);
+  if (str.length <= 4) return '***';
+  return '*'.repeat(str.length - 4) + str.slice(-4);
+};
+
 class StudentController {
   
   async getAllStudents(req, res) {
@@ -10,7 +17,15 @@ class StudentController {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return res.status(200).json({ status: 'success', data });
+
+      const isAdmin = req.user && req.user.role === 'ADMIN';
+      const sanitizedData = (data || []).map(student => ({
+        ...student,
+        document_id: isAdmin ? student.document_id : maskSensitiveData(student.document_id),
+        phone: isAdmin ? student.phone : maskSensitiveData(student.phone)
+      }));
+
+      return res.status(200).json({ status: 'success', data: sanitizedData });
     } catch (error) {
       return res.status(500).json({ status: 'error', message: error.message });
     }

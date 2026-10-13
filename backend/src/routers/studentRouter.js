@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const studentController = require('../controllers/studentController');
 
-router.get('/', studentController.getAllStudents);
+const { verifyOptionalToken } = require('../middlewares/authMiddleware');
+
+router.get('/', verifyOptionalToken, studentController.getAllStudents);
 router.post('/', studentController.createStudent);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-﻿const { verifyToken } = require('../utils/security');
+const { verifyToken } = require('../utils/security');
 
 /**
  * Middleware para validar que la petición contenga un JWT válido en Authorization: Bearer <token>
@@ -41,7 +41,27 @@ const authorizeRole = (...allowedRoles) => {
   };
 };
 
+/**
+ * Middleware opcional: si hay token lo valida y adjunta a req.user, si no, continúa como anónimo
+ */
+const verifyOptionalToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+  try {
+    const decoded = verifyToken(token);
+    req.user = decoded;
+  } catch (err) {
+    req.user = null;
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
-  authorizeRole
+  authorizeRole,
+  verifyOptionalToken
 };

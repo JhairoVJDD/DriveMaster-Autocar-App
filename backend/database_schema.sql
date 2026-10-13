@@ -81,3 +81,30 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+
+-- =========================================================================
+-- 6. POLÍTICAS DE SEGURIDAD ESTRICTA (ROW LEVEL SECURITY - RLS)
+-- Imprescindible para evitar accesos no autorizados a través de la API REST de Supabase
+-- =========================================================================
+
+-- Activar RLS en todas las tablas (Bloquea accesos anónimos no autorizados por defecto)
+ALTER TABLE instructors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Por defecto con RLS activado, la clave 'anon' pública no tiene acceso a leer ni escribir datos sensibles.
+-- El Backend Node.js utilizando la clave 'service_role' tiene bypass seguro para realizar las operaciones.
+-- Políticas explícitas para permitir lectura pública solo de vehículos disponibles si es requerido:
+CREATE POLICY "Permitir lectura publica de vehiculos" ON vehicles
+    FOR SELECT USING (true);
+
+-- Proteger tabla de usuarios: Ningún cliente anónimo puede leer password_hash
+CREATE POLICY "Bloqueo total anonimo en usuarios" ON users
+    FOR ALL USING (false);
+
+-- Proteger datos personales de alumnos (DNI, Teléfono, Email): Bloqueo directo anónimo
+CREATE POLICY "Bloqueo directo anonimo en alumnos" ON students
+    FOR ALL USING (false);
+

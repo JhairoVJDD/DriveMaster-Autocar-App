@@ -1,4 +1,4 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -7,12 +7,16 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_ROUNDS = 12;
 
-// Secreto para JWT
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ENCRYPTION_SECRET || 'jwt-drivemaster-secret-key-99281-2026';
+// Secreto para JWT: Debe venir de variable de entorno por seguridad
+const RUNTIME_EPHEMERAL_SECRET = crypto.randomBytes(32).toString('hex');
+if (!process.env.JWT_SECRET) {
+  console.warn('[SECURITY WARNING] JWT_SECRET no está definido en .env. Usando secreto efímero en memoria.');
+}
+const JWT_SECRET = process.env.JWT_SECRET || RUNTIME_EPHEMERAL_SECRET;
 const JWT_EXPIRES_IN = '8h';
 
 const getMasterKey = () => {
-  const secret = process.env.ENCRYPTION_SECRET || process.env.SUPABASE_KEY || 'default-secure-fallback-driving-school-key-32b!';
+  const secret = process.env.ENCRYPTION_SECRET || process.env.JWT_SECRET || RUNTIME_EPHEMERAL_SECRET;
   return crypto.createHash('sha256').update(String(secret)).digest();
 };
 

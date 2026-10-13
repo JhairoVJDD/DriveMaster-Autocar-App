@@ -1,4 +1,4 @@
-﻿const supabase = require('../utils/supabase');
+const supabase = require('../utils/supabase');
 const { hashPassword, verifyPassword, generateToken } = require('../utils/security');
 const { memoryUsers } = require('../utils/userStore');
 
@@ -106,7 +106,25 @@ class AuthController {
       }
 
       const normalizedEmail = email.trim().toLowerCase();
-      const assignedRole = ['ADMIN', 'INSTRUCTOR', 'STUDENT'].includes(role) ? role : 'INSTRUCTOR';
+      
+      // Control estricto de roles para prevenir escalada de privilegios (Privilege Escalation)
+      let assignedRole = 'STUDENT';
+      const requestedRole = (role || 'STUDENT').toUpperCase();
+
+      if (['ADMIN', 'INSTRUCTOR'].includes(requestedRole)) {
+        const isAdminUser = req.user && req.user.role === 'ADMIN';
+        const validAdminKey = process.env.ADMIN_REGISTRATION_KEY && 
+          req.body.adminRegistrationKey === process.env.ADMIN_REGISTRATION_KEY;
+
+        if (!isAdminUser && !validAdminKey) {
+          return res.status(403).json({
+            status: 'error',
+            message: 'No autorizado: Se requieren permisos de Administrador o clave de registro autorizada para asignar este rol.'
+          });
+        }
+        assignedRole = requestedRole;
+      }
+
       const password_hash = await hashPassword(password);
 
       const newUser = {
